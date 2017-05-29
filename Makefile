@@ -10,13 +10,13 @@ BINARY        ?= hrp
 SOURCES        = $(shell find . -name '*.go')
 IMAGE         ?= zlangbert/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
-BUILD_FLAGS   ?= -v
+BUILD_FLAGS   ?= 
 LDFLAGS       ?= -X github.com/zlangbert/hrp/config.version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.docker: build/$(BINARY)
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
