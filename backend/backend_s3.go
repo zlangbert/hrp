@@ -1,19 +1,19 @@
 package backend
 
 import (
-	"fmt"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"io/ioutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -21,7 +21,6 @@ var (
 )
 
 type s3Backend struct {
-	log    *log.Logger
 	config *s3Config
 	svc    *s3.S3
 }
@@ -34,13 +33,11 @@ type s3Config struct {
 
 func NewS3() *s3Backend {
 
-	logger := log.New(os.Stdout, "s3Backend", log.LstdFlags)
-
 	// create aws session
 	awsConfig := &aws.Config{Region: aws.String("us-west-2")}
 	awsSession, err := session.NewSession(awsConfig)
 	if err != nil {
-		logger.Fatal("failed to create aws session", err)
+		log.Fatal("failed to create aws session", err)
 	}
 
 	config := &s3Config{
@@ -50,7 +47,6 @@ func NewS3() *s3Backend {
 	}
 
 	return &s3Backend{
-		log:    logger,
 		svc:    s3.New(awsSession),
 		config: config,
 	}
@@ -59,19 +55,41 @@ func NewS3() *s3Backend {
 /**
  * Get index:
  *
- * read s3 or local?
+ * read index from s3
  */
 func (b *s3Backend) GetIndex() ([]byte, error) {
-	return nil, nil
+
+	key := filepath.Join(b.config.prefix, indexFilename)
+	return b.getFile(key)
 }
 
 /**
  * Get chart:
  *
- * read s3 or local?
+ * read chart from s3
  */
 func (b *s3Backend) GetChart(name string) ([]byte, error) {
-	return nil, nil
+
+	key := filepath.Join(b.config.prefix, name)
+	return b.getFile(key)
+}
+
+func (b *s3Backend) getFile(key string) ([]byte, error) {
+	result, err := b.svc.GetObject(&s3.GetObjectInput{
+		Bucket: &b.config.bucket,
+		Key:    &key,
+	})
+	if err != nil {
+		return nil, b.handleAwsError(err)
+	}
+
+	bytes, err := ioutil.ReadAll(result.Body)
+	if err != nil {
+		log.Errorf("failed reading file from s3: %s", key)
+		return nil, b.handleAwsError(err)
+	}
+
+	return bytes, nil
 }
 
 /**
@@ -92,8 +110,8 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 	key := filepath.Join(b.config.prefix, header.Filename)
 
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(b.config.bucket),
-		Key:    aws.String(key),
+		Bucket: &b.config.bucket,
+		Key:    &key,
 		Body:   src,
 	})
 	if err != nil {
@@ -113,7 +131,7 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
  *
  * 1. sync bucket locally
  * 2. regenerate index
- * 3. sync files back to s3
+ * 3. sync index back to s3
  */
 func (b *s3Backend) Reindex() error {
 
@@ -122,19 +140,19 @@ func (b *s3Backend) Reindex() error {
 		return err
 	}
 
-	cmd := exec.Command("helm", "repo", "index", filepath.Clean(b.config.localSyncPath))
+	cmd := exec.Command("helm", "repo", "index", b.config.localSyncPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		b.log.Printf("helm repo index failed: %s", err.Error())
+		log.Errorf("helm repo index failed: %s", err.Error())
 		return err
 	}
 
 	// read index file
 	file, err := os.Open(filepath.Join(b.config.localSyncPath, indexFilename))
 	if err != nil {
-		b.log.Printf("failed to open index file: %s", err.Error())
+		log.Errorf("failed to open index file: %s", err.Error())
 		return err
 	}
 	defer file.Close()
@@ -164,28 +182,31 @@ func (b *s3Backend) localSync() error {
 	err := cmd.Run()
 
 	if err != nil {
-		b.log.Printf("failed s3 sync: %s", err.Error())
+		log.Errorf("failed s3 sync: %s", err.Error())
 	}
 
 	return err
 }
 
+/*
+ * log details if the error is an aws error
+ */
 func (b *s3Backend) handleAwsError(err error) error {
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			// Get error details
-			b.log.Println("Error:", awsErr.Code(), awsErr.Message())
+			log.Error("Error:", awsErr.Code(), awsErr.Message())
 
 			// Prints out full error message, including original error if there was one.
-			b.log.Println("Error:", awsErr.Error())
+			log.Error("Error:", awsErr.Error())
 
 			// Get original error
 			if origErr := awsErr.OrigErr(); origErr != nil {
 				// operate on original error.
-				b.log.Println("Error:", origErr.Error())
+				log.Error("Error:", origErr.Error())
 			}
 		} else {
-			fmt.Println(err.Error())
+			log.Error(err.Error())
 		}
 	}
 	return err

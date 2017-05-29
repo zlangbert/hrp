@@ -50,6 +50,12 @@
   version = "v0.0.2"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "ba1b36c82c5e05c4f912a88eab0dcd91a171688f"
+  version = "v0.11.5"
+
+[[projects]]
   branch = "master"
   name = "github.com/valyala/bytebufferpool"
   packages = ["."]
@@ -76,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "03e5e9323049a9379a73751f54760d4af83d988da6afb78431835aad1948909f"
+  inputs-digest = "e560eea30c523e0458f727b178dc2f0e5da490e7edd89a910db043a75afa8db1"
   solver-name = "gps-cdcl"
   solver-version = 1
