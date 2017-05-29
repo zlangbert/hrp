@@ -1,19 +1,19 @@
 package backend
 
 import (
-	"log"
-	"os/exec"
 	"fmt"
-	"os"
-	"path/filepath"
-	"net/http"
+	"log"
 	"mime/multipart"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 
-	"github.com/labstack/echo"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/labstack/echo"
 )
 
 var (
@@ -21,14 +21,14 @@ var (
 )
 
 type s3Backend struct {
-	log *log.Logger
+	log    *log.Logger
 	config *s3Config
-	svc *s3.S3
+	svc    *s3.S3
 }
 
 type s3Config struct {
-	bucket string
-	prefix string
+	bucket        string
+	prefix        string
 	localSyncPath string
 }
 
@@ -44,42 +44,42 @@ func NewS3() *s3Backend {
 	}
 
 	config := &s3Config{
-		bucket: "zlangb",
-		prefix: filepath.Clean("charts"),
+		bucket:        "zlangb",
+		prefix:        filepath.Clean("charts"),
 		localSyncPath: filepath.Clean("repo"),
 	}
 
 	return &s3Backend{
-		log: logger,
-		svc: s3.New(awsSession),
+		log:    logger,
+		svc:    s3.New(awsSession),
 		config: config,
 	}
 }
 
 /**
-  * Get index:
-  *
-  * read s3 or local?
-  */
+ * Get index:
+ *
+ * read s3 or local?
+ */
 func (b *s3Backend) GetIndex() ([]byte, error) {
 	return nil, nil
 }
 
 /**
-  * Get chart:
-  *
-  * read s3 or local?
-  */
+ * Get chart:
+ *
+ * read s3 or local?
+ */
 func (b *s3Backend) GetChart(name string) ([]byte, error) {
 	return nil, nil
 }
 
 /**
-  * Put chart:
-  *
-  * 1. upload chart to s3
-  * 2. reindex
-  */
+ * Put chart:
+ *
+ * 1. upload chart to s3
+ * 2. reindex
+ */
 func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 	src, err := header.Open()
 	if err != nil {
@@ -93,8 +93,8 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(b.config.bucket),
-		Key:  aws.String(key),
-		Body: src,
+		Key:    aws.String(key),
+		Body:   src,
 	})
 	if err != nil {
 		return b.handleAwsError(err)
@@ -109,12 +109,12 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 }
 
 /**
-  * Reindex repository:
-  *
-  * 1. sync bucket locally
-  * 2. regenerate index
-  * 3. sync files back to s3
-  */
+ * Reindex repository:
+ *
+ * 1. sync bucket locally
+ * 2. regenerate index
+ * 3. sync files back to s3
+ */
 func (b *s3Backend) Reindex() error {
 
 	err := b.localSync()
@@ -143,8 +143,8 @@ func (b *s3Backend) Reindex() error {
 	key := filepath.Join(b.config.prefix, indexFilename)
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
 		Bucket: &b.config.bucket,
-		Key: &key,
-		Body: file,
+		Key:    &key,
+		Body:   file,
 	})
 
 	return b.handleAwsError(err)

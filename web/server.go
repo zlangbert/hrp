@@ -3,8 +3,8 @@ package web
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.nike.com/zlangb/helm-proxy/backend"
 	"github.com/labstack/gommon/log"
+	"github.nike.com/zlangb/helm-proxy/backend"
 )
 
 type context struct {

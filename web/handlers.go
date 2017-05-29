@@ -1,8 +1,8 @@
 package web
 
 import (
-	"net/http"
 	"github.com/labstack/echo"
+	"net/http"
 )
 
 func health(c echo.Context) error {
