@@ -15,6 +15,7 @@ type context struct {
 	backend backend.Backend
 }
 
+// Start starts the web server
 func Start(cfg *config.AppConfig, backend backend.Backend) {
 	e := echo.New()
 

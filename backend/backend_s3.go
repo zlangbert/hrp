@@ -28,7 +28,7 @@ type s3Backend struct {
 	lock   *sync.Mutex
 }
 
-func NewS3(config *config.S3Config) *s3Backend {
+func newS3(config *config.S3Config) *s3Backend {
 
 	// validate config
 	if config.Bucket == "" {
@@ -48,7 +48,7 @@ func NewS3(config *config.S3Config) *s3Backend {
 	return &s3Backend{
 		svc:    s3.New(awsSession),
 		config: config,
-		lock: &sync.Mutex{},
+		lock:   &sync.Mutex{},
 	}
 }
 

@@ -3,6 +3,7 @@ hrp - helm repository proxy
 
 [![Docker Repository on Quay](https://quay.io/repository/zlangbert/hrp/status "Docker Repository on Quay")](https://quay.io/repository/zlangbert/hrp)
 [![Build Status](https://travis-ci.org/zlangbert/hrp.svg?branch=master)](https://travis-ci.org/zlangbert/hrp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zlangbert/hrp)](https://goreportcard.com/report/github.com/zlangbert/hrp)
 
 hrp is a helm chart repository proxy with pluggable storage backends.
 

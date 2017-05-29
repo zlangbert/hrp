@@ -18,20 +18,8 @@ func main() {
 	}
 
 	// build backend
-	var storageBackend backend.Backend = nil
-	switch cfg.BackendName {
-	case "s3":
-		storageBackend = backend.NewS3(&cfg.S3Config)
-	default:
-		log.Fatalf("unrecognized storage backend: %s", cfg.BackendName)
-	}
-
-	// initialize backend
-	err = storageBackend.Initialize()
-	if err != nil {
-		log.Fatal("failed to initialize backend")
-	}
+	b := backend.NewBackend(cfg)
 
 	// start web server
-	web.Start(cfg, storageBackend)
+	web.Start(cfg, b)
 }
