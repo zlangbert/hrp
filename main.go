@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
-	"github.nike.com/zlangb/hrp/web"
-	"github.nike.com/zlangb/hrp/config"
 	log "github.com/sirupsen/logrus"
 	"github.nike.com/zlangb/hrp/backend"
+	"github.nike.com/zlangb/hrp/config"
+	"github.nike.com/zlangb/hrp/web"
+	"os"
 )
 
 func main() {

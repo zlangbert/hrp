@@ -4,14 +4,14 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
-	"github.nike.com/zlangb/hrp/config"
 	"github.nike.com/zlangb/hrp/backend"
+	"github.nike.com/zlangb/hrp/config"
 )
 
 type context struct {
 	echo.Context
 
-	cfg *config.AppConfig
+	cfg     *config.AppConfig
 	backend backend.Backend
 }
 
@@ -44,7 +44,7 @@ func appContext(cfg *config.AppConfig, backend backend.Backend) echo.MiddlewareF
 		return func(c echo.Context) error {
 			cc := &context{
 				Context: c,
-				cfg: cfg,
+				cfg:     cfg,
 				backend: backend,
 			}
 			return h(cc)
