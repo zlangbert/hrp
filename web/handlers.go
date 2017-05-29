@@ -50,3 +50,14 @@ func putChart(ec echo.Context) error {
 
 	return c.NoContent(200)
 }
+
+func reindex(ec echo.Context) error {
+	c := ec.(*context)
+
+	err := c.backend.Reindex()
+	if err != nil {
+		return echo.NewHTTPError(500, "failed to reindex")
+	}
+
+	return c.NoContent(200)
+}

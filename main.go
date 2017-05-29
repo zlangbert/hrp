@@ -27,7 +27,10 @@ func main() {
 	}
 
 	// initialize backend
-	storageBackend.Initialize()
+	err = storageBackend.Initialize()
+	if err != nil {
+		log.Fatal("failed to initialize backend")
+	}
 
 	// start web server
 	web.Start(cfg, storageBackend)

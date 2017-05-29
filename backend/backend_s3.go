@@ -15,6 +15,7 @@ import (
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 	"github.com/zlangbert/hrp/config"
+	"sync"
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 type s3Backend struct {
 	config *config.S3Config
 	svc    *s3.S3
+	lock   *sync.Mutex
 }
 
 func NewS3(config *config.S3Config) *s3Backend {
@@ -46,6 +48,7 @@ func NewS3(config *config.S3Config) *s3Backend {
 	return &s3Backend{
 		svc:    s3.New(awsSession),
 		config: config,
+		lock: &sync.Mutex{},
 	}
 }
 
@@ -147,6 +150,9 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
  */
 func (b *s3Backend) Reindex() error {
 
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	log.Info("reindexing...")
 
 	err := b.localSync()
@@ -179,7 +185,13 @@ func (b *s3Backend) Reindex() error {
 		Body:   file,
 	})
 
-	return b.handleAwsError(err)
+	if err != nil {
+		return b.handleAwsError(err)
+	}
+
+	log.Info("done reindexing")
+
+	return nil
 }
 
 /*
@@ -193,15 +205,16 @@ func (b *s3Backend) localSync() error {
 	cmd := exec.Command("aws", "s3", "sync", "--delete", source, target)
 	if b.config.Debug {
 		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 	}
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 
 	if err != nil {
-		log.Errorf("failed s3 sync: %s", err.Error())
+		log.Error("failed s3 sync")
+		return err
 	}
 
-	return err
+	return nil
 }
 
 /*

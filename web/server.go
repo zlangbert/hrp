@@ -26,12 +26,16 @@ func Start(cfg *config.AppConfig, backend backend.Backend) {
 	// create custom context containing config
 	e.Use(appContext(cfg, backend))
 	e.Use(middleware.Recover())
-	e.Use(middleware.Logger())
+
+	if cfg.Debug {
+		e.Use(middleware.Logger())
+	}
 
 	e.GET("/health", health)
 	e.GET("/index.yaml", index)
 	e.GET("/:chart", getChart)
 	e.POST("/chart", putChart)
+	e.POST("/reindex", reindex)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }
