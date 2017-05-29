@@ -11,8 +11,7 @@ services:
 language: go
 
 go:
-- 1.8
-- tip
+  - 1.8
 
 matrix:
   allow_failures:
