@@ -10,6 +10,7 @@ import (
 
 func main() {
 
+	// build config
 	cfg := config.New()
 	err := cfg.Parse(os.Args[1:])
 	if err != nil {
@@ -25,7 +26,9 @@ func main() {
 		log.Fatalf("unrecognized storage backend: %s", cfg.BackendName)
 	}
 
+	// initialize backend
 	storageBackend.Initialize()
 
+	// start web server
 	web.Start(cfg, storageBackend)
 }
