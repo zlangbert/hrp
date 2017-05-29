@@ -190,9 +190,11 @@ func (b *s3Backend) localSync() error {
 	source := "s3://" + filepath.Join(b.config.Bucket, b.config.Prefix)
 	target := b.config.LocalSyncPath
 
-	cmd := exec.Command("aws", "s3", "sync", "--quiet", "--delete", source, target)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd := exec.Command("aws", "s3", "sync", "--delete", source, target)
+	if b.config.Debug {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	err := cmd.Run()
 
 	if err != nil {

@@ -22,6 +22,7 @@ type S3Config struct {
 	Bucket        string
 	Prefix        string
 	LocalSyncPath string
+	Debug         bool
 }
 
 func New() *AppConfig {
@@ -60,6 +61,8 @@ func (cfg *AppConfig) Parse(args []string) error {
 	if err != nil {
 		return err
 	}
+
+	cfg.S3Config.Debug = cfg.Debug
 
 	return nil
 }
