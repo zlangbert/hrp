@@ -20,7 +20,7 @@ func NewBackend(cfg *config.AppConfig) Backend {
 	var backend Backend
 	switch cfg.BackendName {
 	case "s3":
-		backend = newS3(&cfg.S3Config)
+		backend = newS3(cfg)
 	default:
 		log.Fatalf("unrecognized storage backend: %s", cfg.BackendName)
 	}
