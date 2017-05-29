@@ -4,8 +4,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
-	"github.nike.com/zlangb/hrp/backend"
-	"github.nike.com/zlangb/hrp/config"
+	"github.com/zlangbert/hrp/backend"
+	"github.com/zlangbert/hrp/config"
 )
 
 type context struct {

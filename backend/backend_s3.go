@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
-	"github.nike.com/zlangb/hrp/config"
+	"github.com/zlangbert/hrp/config"
 )
 
 var (

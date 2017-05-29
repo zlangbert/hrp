@@ -2,9 +2,9 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.nike.com/zlangb/hrp/backend"
-	"github.nike.com/zlangb/hrp/config"
-	"github.nike.com/zlangb/hrp/web"
+	"github.com/zlangbert/hrp/backend"
+	"github.com/zlangbert/hrp/config"
+	"github.com/zlangbert/hrp/web"
 	"os"
 )
 

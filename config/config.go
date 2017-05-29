@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Version = "unknown"
+	version = "unknown"
 )
 
 /*
@@ -34,7 +34,7 @@ func New() *AppConfig {
 func (cfg *AppConfig) Parse(args []string) error {
 
 	app := kingpin.New("hrp", "hrp is a helm chart repository proxy with pluggable storage backends")
-	app.Version(Version)
+	app.Version(version)
 
 	app.Flag("backend", "storage backend to use (s3)").
 		Required().
