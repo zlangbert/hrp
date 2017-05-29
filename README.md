@@ -10,7 +10,7 @@ hrp is a helm chart repository proxy with pluggable storage backends.
 ## Features
 
 * acts as a helm repository and uses a storage backend for persistence
-* upload charts to the repository through the http api
+* upload charts to the repository through the HTTP API
 
 Table of contents
 =================
@@ -66,7 +66,7 @@ curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
 
 ### `POST /reindex.yaml`
 
-Forces a full reindex of the repository. If your `index.yaml` somehow becomes out of sync, this will regenerate it.
+Forces a full reindex of the repository. If your `index.yaml` is somehow out of sync, this will regenerate it.
 A reindex is automatically done on startup and when a new chart is pushed.
 
 ```
