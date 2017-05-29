@@ -1,16 +1,29 @@
 package main
 
 import (
-//gopkg.in/alecthomas/kingpin.v2
-)
-import (
-	"github.nike.com/zlangb/helm-proxy/backend"
-	"github.nike.com/zlangb/helm-proxy/web"
+	"os"
+	"github.nike.com/zlangb/hrp/web"
+	"github.nike.com/zlangb/hrp/config"
+	log "github.com/sirupsen/logrus"
+	"github.nike.com/zlangb/hrp/backend"
 )
 
 func main() {
 
-	var storage_backend backend.Backend = backend.NewS3()
+	cfg := config.New()
+	err := cfg.Parse(os.Args[1:])
+	if err != nil {
+		log.Fatalf("flag parsing error: %v", err)
+	}
 
-	web.Start(storage_backend)
+	// build backend
+	var storageBackend backend.Backend = nil
+	switch cfg.BackendName {
+	case "s3":
+		storageBackend = backend.NewS3(&cfg.S3Config)
+	default:
+		log.Fatalf("unrecognized storage backend: %s", cfg.BackendName)
+	}
+
+	web.Start(cfg, storageBackend)
 }

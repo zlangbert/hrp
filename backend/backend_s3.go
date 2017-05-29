@@ -1,12 +1,12 @@
 package backend
 
 import (
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"io/ioutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
+	"github.nike.com/zlangb/hrp/config"
 )
 
 var (
@@ -21,29 +22,25 @@ var (
 )
 
 type s3Backend struct {
-	config *s3Config
+	config *config.S3Config
 	svc    *s3.S3
 }
 
-type s3Config struct {
-	bucket        string
-	prefix        string
-	localSyncPath string
-}
+func NewS3(config *config.S3Config) *s3Backend {
 
-func NewS3() *s3Backend {
+	// validate config
+	if config.Bucket == "" {
+		log.Fatal("s3 config - bucket missing")
+	}
+	if config.LocalSyncPath == "" {
+		log.Fatal("s3 config - local sync path missing")
+	}
 
 	// create aws session
 	awsConfig := &aws.Config{Region: aws.String("us-west-2")}
 	awsSession, err := session.NewSession(awsConfig)
 	if err != nil {
 		log.Fatal("failed to create aws session", err)
-	}
-
-	config := &s3Config{
-		bucket:        "zlangb",
-		prefix:        filepath.Clean("charts"),
-		localSyncPath: filepath.Clean("repo"),
 	}
 
 	return &s3Backend{
@@ -59,7 +56,9 @@ func NewS3() *s3Backend {
  */
 func (b *s3Backend) GetIndex() ([]byte, error) {
 
-	key := filepath.Join(b.config.prefix, indexFilename)
+	//TODO: create empty if it doesn't exist
+
+	key := filepath.Join(b.config.Prefix, indexFilename)
 	return b.getFile(key)
 }
 
@@ -70,13 +69,13 @@ func (b *s3Backend) GetIndex() ([]byte, error) {
  */
 func (b *s3Backend) GetChart(name string) ([]byte, error) {
 
-	key := filepath.Join(b.config.prefix, name)
+	key := filepath.Join(b.config.Prefix, name)
 	return b.getFile(key)
 }
 
 func (b *s3Backend) getFile(key string) ([]byte, error) {
 	result, err := b.svc.GetObject(&s3.GetObjectInput{
-		Bucket: &b.config.bucket,
+		Bucket: &b.config.Bucket,
 		Key:    &key,
 	})
 	if err != nil {
@@ -107,10 +106,10 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 	}
 	defer src.Close()
 
-	key := filepath.Join(b.config.prefix, header.Filename)
+	key := filepath.Join(b.config.Prefix, header.Filename)
 
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
-		Bucket: &b.config.bucket,
+		Bucket: &b.config.Bucket,
 		Key:    &key,
 		Body:   src,
 	})
@@ -140,7 +139,7 @@ func (b *s3Backend) Reindex() error {
 		return err
 	}
 
-	cmd := exec.Command("helm", "repo", "index", b.config.localSyncPath)
+	cmd := exec.Command("helm", "repo", "index", b.config.LocalSyncPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -150,7 +149,7 @@ func (b *s3Backend) Reindex() error {
 	}
 
 	// read index file
-	file, err := os.Open(filepath.Join(b.config.localSyncPath, indexFilename))
+	file, err := os.Open(filepath.Join(b.config.LocalSyncPath, indexFilename))
 	if err != nil {
 		log.Errorf("failed to open index file: %s", err.Error())
 		return err
@@ -158,9 +157,9 @@ func (b *s3Backend) Reindex() error {
 	defer file.Close()
 
 	// upload new index
-	key := filepath.Join(b.config.prefix, indexFilename)
+	key := filepath.Join(b.config.Prefix, indexFilename)
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
-		Bucket: &b.config.bucket,
+		Bucket: &b.config.Bucket,
 		Key:    &key,
 		Body:   file,
 	})
@@ -173,8 +172,8 @@ func (b *s3Backend) Reindex() error {
  */
 func (b *s3Backend) localSync() error {
 
-	source := "s3://" + filepath.Join(b.config.bucket, b.config.prefix)
-	target := b.config.localSyncPath
+	source := "s3://" + filepath.Join(b.config.Bucket, b.config.Prefix)
+	target := b.config.LocalSyncPath
 
 	cmd := exec.Command("aws", "s3", "sync", "--delete", source, target)
 	cmd.Stdout = os.Stdout
