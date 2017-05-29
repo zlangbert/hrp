@@ -25,5 +25,7 @@ func main() {
 		log.Fatalf("unrecognized storage backend: %s", cfg.BackendName)
 	}
 
+	storageBackend.Initialize()
+
 	web.Start(cfg, storageBackend)
 }

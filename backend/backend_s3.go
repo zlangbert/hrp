@@ -49,20 +49,33 @@ func NewS3(config *config.S3Config) *s3Backend {
 	}
 }
 
-/**
+/*
+ * Initialize backend
+ */
+func (b *s3Backend) Initialize() error {
+
+	log.Info("initializing...")
+
+	err := b.Reindex()
+	if err != nil {
+		return b.handleAwsError(err)
+	}
+
+	return nil
+}
+
+/*
  * Get index:
  *
  * read index from s3
  */
 func (b *s3Backend) GetIndex() ([]byte, error) {
 
-	//TODO: create empty if it doesn't exist
-
 	key := filepath.Join(b.config.Prefix, indexFilename)
 	return b.getFile(key)
 }
 
-/**
+/*
  * Get chart:
  *
  * read chart from s3
@@ -91,7 +104,7 @@ func (b *s3Backend) getFile(key string) ([]byte, error) {
 	return bytes, nil
 }
 
-/**
+/*
  * Put chart:
  *
  * 1. upload chart to s3
@@ -125,7 +138,7 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 	return nil
 }
 
-/**
+/*
  * Reindex repository:
  *
  * 1. sync bucket locally
@@ -133,6 +146,8 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
  * 3. sync index back to s3
  */
 func (b *s3Backend) Reindex() error {
+
+	log.Info("reindexing...")
 
 	err := b.localSync()
 	if err != nil {
@@ -175,7 +190,7 @@ func (b *s3Backend) localSync() error {
 	source := "s3://" + filepath.Join(b.config.Bucket, b.config.Prefix)
 	target := b.config.LocalSyncPath
 
-	cmd := exec.Command("aws", "s3", "sync", "--delete", source, target)
+	cmd := exec.Command("aws", "s3", "sync", "--quiet", "--delete", source, target)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -193,17 +208,8 @@ func (b *s3Backend) localSync() error {
 func (b *s3Backend) handleAwsError(err error) error {
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
-			// Get error details
-			log.Error("Error:", awsErr.Code(), awsErr.Message())
-
 			// Prints out full error message, including original error if there was one.
-			log.Error("Error:", awsErr.Error())
-
-			// Get original error
-			if origErr := awsErr.OrigErr(); origErr != nil {
-				// operate on original error.
-				log.Error("Error:", origErr.Error())
-			}
+			log.Error(awsErr.Error())
 		} else {
 			log.Error(err.Error())
 		}
