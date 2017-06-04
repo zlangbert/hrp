@@ -10,6 +10,9 @@ lint:
 	for pkg in $$(go list ./... |grep -v /vendor/); do golint $$pkg; done
 
 test:
+	go test -v -race -cover $(shell go list ./... | grep -v /vendor/)
+
+test.cover:
 	overalls -project='github.com/zlangbert/hrp' -ignore='vendor' -covermode=atomic -- -v -race
 	goveralls -coverprofile=overalls.coverprofile
 

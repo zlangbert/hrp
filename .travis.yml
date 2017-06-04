@@ -27,7 +27,7 @@ install:
   - make deps
 
 script:
-  - make test
+  - make test.cover
   - make lint
 
 after_success:

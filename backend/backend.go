@@ -18,7 +18,7 @@ type Backend interface {
 }
 
 // NewBackend is a factory that returns a new Backend based on the config
-func NewBackend(cfg *config.AppConfig) (Backend, error) {
+func NewBackend(cfg *config.AppConfig, init bool) (Backend, error) {
 	var backend Backend
 	switch cfg.BackendName {
 	case "s3":
@@ -32,10 +32,12 @@ func NewBackend(cfg *config.AppConfig) (Backend, error) {
 	}
 
 	// initialize
-	err := backend.Initialize()
-	if err != nil {
-		log.Error(err.Error())
-		return nil, errors.New("failed to initialize backend")
+	if init {
+		err := backend.Initialize()
+		if err != nil {
+			log.Error(err.Error())
+			return nil, errors.New("failed to initialize backend")
+		}
 	}
 
 	return backend, nil

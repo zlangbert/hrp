@@ -15,6 +15,7 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"testing"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 func TestS3_New(t *testing.T) {
@@ -156,6 +157,36 @@ func TestS3Backend_GetChart(t *testing.T) {
 	assert.Equal(t, result, objectData)
 }
 
+func TestS3Backend_GetChart_ResultReadFail(t *testing.T) {
+
+	cfg := testConfig()
+	b, _ := newS3(cfg)
+
+	reader := new(readerError)
+
+	// mock
+	s3Api := new(s3Mock)
+	s3Api.On("GetObject", &s3.GetObjectInput{
+		Bucket: aws.String("bucket-test"),
+		Key:    aws.String("prefix/test"),
+	}).Return(
+		&s3.GetObjectOutput{
+			Body: ioutil.NopCloser(reader),
+		},
+		nil,
+	)
+	b.svc = s3Api
+
+	// run
+	result, err := b.GetChart("test")
+
+	// check
+	assert.Nil(t, result, "nil result")
+	if assert.Error(t, err, "expected error") {
+		assert.Contains(t, err.Error(), "read error")
+	}
+}
+
 func TestS3Backend_GetChart_S3Error(t *testing.T) {
 
 	cfg := testConfig()
@@ -268,7 +299,7 @@ func (m *s3Mock) GetObject(i *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	}
 
 	if e, ok := args.Get(1).(error); ok {
-		err = e
+		err = awserr.New("-1", "aws test service error", e)
 	} else {
 		err = nil
 	}
@@ -289,7 +320,7 @@ func (m *s3Mock) PutObject(i *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
 	}
 
 	if e, ok := args.Get(1).(error); ok {
-		err = e
+		err = awserr.New("-1", "aws test service error", e)
 	} else {
 		err = nil
 	}
@@ -327,4 +358,13 @@ func (m *helmUtilMock) ReadIndex(path string) (io.ReadSeeker, error) {
 // multipart.File mock
 type fileMock struct {
 	multipart.File
+}
+
+// readerError
+type readerError struct {
+	io.Reader
+}
+
+func (r *readerError) Read(p []byte) (n int, err error)  {
+	return 0, errors.New("read error")
 }

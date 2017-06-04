@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// build backend
-	b, err := backend.NewBackend(cfg)
+	b, err := backend.NewBackend(cfg, true)
 	if err != nil {
 		log.Error(err.Error())
 		log.Fatal("failed to build backend")
