@@ -1,19 +1,20 @@
 package backend
 
 import (
+	"bytes"
+	"errors"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/zlangbert/hrp/config"
-	"testing"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/aws"
-	"bytes"
-	"io/ioutil"
-	"errors"
 	"github.com/zlangbert/hrp/util"
-	"path/filepath"
 	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"path/filepath"
+	"testing"
 )
 
 func TestS3_New(t *testing.T) {
@@ -66,8 +67,8 @@ func TestS3Backend_Initialize(t *testing.T) {
 	s3Api := new(s3Mock)
 	s3Api.On("PutObject", &s3.PutObjectInput{
 		Bucket: aws.String("bucket-test"),
-		Key: aws.String("prefix/index.yaml"),
-		Body: indexData,
+		Key:    aws.String("prefix/index.yaml"),
+		Body:   indexData,
 	}).Return(
 		&s3.PutObjectOutput{},
 		nil,
@@ -77,7 +78,7 @@ func TestS3Backend_Initialize(t *testing.T) {
 	awsUtil := new(awsUtilMock)
 	awsUtil.On(
 		"Sync",
-		"s3://" + filepath.Join(cfg.S3.Bucket, cfg.S3.Prefix),
+		"s3://"+filepath.Join(cfg.S3.Bucket, cfg.S3.Prefix),
 		cfg.S3.LocalSyncPath,
 	).Return(nil)
 	b.awsUtil = awsUtil
@@ -92,6 +93,7 @@ func TestS3Backend_Initialize(t *testing.T) {
 		"ReadIndex",
 		cfg.S3.LocalSyncPath,
 	).Return(indexData, nil)
+	b.helmUtil = helmUtil
 
 	// run
 	err := b.Initialize()
@@ -110,7 +112,34 @@ func TestS3Backend_GetIndex(t *testing.T) {
 	s3Api := new(s3Mock)
 	s3Api.On("GetObject", &s3.GetObjectInput{
 		Bucket: aws.String("bucket-test"),
-		Key: aws.String("prefix/test"),
+		Key:    aws.String("prefix/index.yaml"),
+	}).Return(
+		&s3.GetObjectOutput{
+			Body: ioutil.NopCloser(bytes.NewReader(objectData)),
+		},
+		nil,
+	)
+	b.svc = s3Api
+
+	// run
+	result, err := b.GetIndex()
+
+	// check
+	assert.Nil(t, err, "nil err")
+	assert.Equal(t, result, objectData)
+}
+
+func TestS3Backend_GetChart(t *testing.T) {
+
+	cfg := testConfig()
+	b, _ := newS3(cfg)
+	objectData := []byte{0, 1, 2, 3, 4}
+
+	// mock
+	s3Api := new(s3Mock)
+	s3Api.On("GetObject", &s3.GetObjectInput{
+		Bucket: aws.String("bucket-test"),
+		Key:    aws.String("prefix/test"),
 	}).Return(
 		&s3.GetObjectOutput{
 			Body: ioutil.NopCloser(bytes.NewReader(objectData)),
@@ -127,7 +156,7 @@ func TestS3Backend_GetIndex(t *testing.T) {
 	assert.Equal(t, result, objectData)
 }
 
-func TestS3Backend_GetIndex_S3Error(t *testing.T) {
+func TestS3Backend_GetChart_S3Error(t *testing.T) {
 
 	cfg := testConfig()
 	b, _ := newS3(cfg)
@@ -136,7 +165,7 @@ func TestS3Backend_GetIndex_S3Error(t *testing.T) {
 	s3Api := new(s3Mock)
 	s3Api.On("GetObject", &s3.GetObjectInput{
 		Bucket: aws.String("bucket-test"),
-		Key: aws.String("prefix/test"),
+		Key:    aws.String("prefix/test"),
 	}).Return(
 		nil,
 		errors.New("fail"),
@@ -149,6 +178,62 @@ func TestS3Backend_GetIndex_S3Error(t *testing.T) {
 	// check
 	assert.Nil(t, result, "nil result")
 	assert.Contains(t, err.Error(), "fail")
+}
+
+func TestS3Backend_PutChart(t *testing.T) {
+
+	cfg := testConfig()
+	b, _ := newS3(cfg)
+
+	filename := "test"
+	file := new(fileMock)
+	indexData := bytes.NewReader([]byte{})
+
+	// mock
+	s3Api := new(s3Mock)
+	s3Api.On("PutObject", &s3.PutObjectInput{
+		Bucket: aws.String("bucket-test"),
+		Key:    aws.String("prefix/test"),
+		Body:   file,
+	}).Return(
+		&s3.PutObjectOutput{},
+		nil,
+	)
+	s3Api.On("PutObject", &s3.PutObjectInput{
+		Bucket: aws.String("bucket-test"),
+		Key:    aws.String("prefix/index.yaml"),
+		Body:   indexData,
+	}).Return(
+		&s3.PutObjectOutput{},
+		nil,
+	)
+	b.svc = s3Api
+
+	awsUtil := new(awsUtilMock)
+	awsUtil.On(
+		"Sync",
+		"s3://"+filepath.Join(cfg.S3.Bucket, cfg.S3.Prefix),
+		cfg.S3.LocalSyncPath,
+	).Return(nil)
+	b.awsUtil = awsUtil
+
+	helmUtil := new(helmUtilMock)
+	helmUtil.On(
+		"GenerateIndex",
+		cfg.BaseURL,
+		cfg.S3.LocalSyncPath,
+	).Return(nil)
+	helmUtil.On(
+		"ReadIndex",
+		cfg.S3.LocalSyncPath,
+	).Return(indexData, nil)
+	b.helmUtil = helmUtil
+
+	// run
+	err := b.PutChart(filename, file)
+
+	// check
+	assert.Nil(t, err, "expected nil err")
 }
 
 //
@@ -165,12 +250,12 @@ func testConfig() *config.AppConfig {
 }
 
 // s3Mock
-type s3Mock struct{
+type s3Mock struct {
 	mock.Mock
 	s3iface.S3API
 }
 
-func (m *s3Mock) GetObject(i *s3.GetObjectInput) (*s3.GetObjectOutput, error)  {
+func (m *s3Mock) GetObject(i *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	args := m.Called(i)
 
 	var out *s3.GetObjectOutput
@@ -191,7 +276,7 @@ func (m *s3Mock) GetObject(i *s3.GetObjectInput) (*s3.GetObjectOutput, error)  {
 	return out, err
 }
 
-func (m *s3Mock) PutObject(i *s3.PutObjectInput) (*s3.PutObjectOutput, error)  {
+func (m *s3Mock) PutObject(i *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
 	args := m.Called(i)
 
 	var out *s3.PutObjectOutput
@@ -218,7 +303,7 @@ type awsUtilMock struct {
 	util.AwsUtil
 }
 
-func (m *awsUtilMock) Sync(source string, target string) error  {
+func (m *awsUtilMock) Sync(source string, target string) error {
 	args := m.Called(source, target)
 	return args.Error(0)
 }
@@ -237,4 +322,9 @@ func (m *helmUtilMock) GenerateIndex(baseUrl string, path string) error {
 func (m *helmUtilMock) ReadIndex(path string) (io.ReadSeeker, error) {
 	args := m.Called(path)
 	return args.Get(0).(io.ReadSeeker), args.Error(1)
+}
+
+// multipart.File mock
+type fileMock struct {
+	multipart.File
 }

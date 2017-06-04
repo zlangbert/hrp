@@ -1,16 +1,16 @@
 package util
 
 import (
-	"os/exec"
-	"os"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"os/exec"
 )
 
 type AwsUtil interface {
 	Sync(source string, target string) error
 }
 
-type awsUtilImpl struct{
+type awsUtilImpl struct {
 	Debug bool
 }
 

@@ -1,11 +1,11 @@
 package backend
 
 import (
+	"errors"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/zlangbert/hrp/config"
 	"mime/multipart"
-	"errors"
-	"fmt"
 )
 
 // A Backend is a generic interface for chart storage
@@ -13,7 +13,7 @@ type Backend interface {
 	Initialize() error
 	GetIndex() ([]byte, error)
 	GetChart(string) ([]byte, error)
-	PutChart(*multipart.FileHeader) error
+	PutChart(filename string, file multipart.File) error
 	Reindex() error
 }
 

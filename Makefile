@@ -5,7 +5,7 @@ deps:
 
 lint:
 	@if gofmt -l . | egrep -v ^vendor/ | grep .go; then \
-	  echo "^- Repo contains improperly formatted go files; run gofmt -s -w $(find . -name '*.go' | grep -v /vendor/)" && exit 1; \
+	  echo "^ - Repo contains improperly formatted go files; run gofmt -s -w \$$(find . -name '*.go' | grep -v /vendor/)" && exit 1; \
 	  else echo "All .go files formatted correctly"; fi
 	for pkg in $$(go list ./... |grep -v /vendor/); do golint $$pkg; done
 

@@ -15,7 +15,7 @@ hrp is a helm chart repository proxy with pluggable storage backends.
 Table of contents
 =================
 
-  * [Table of contents](#table-of-contents)
+  * [Getting Started](#getting-started)
   * [API](#api)
   * [Backends](#backends)
     * [S3](#s3)

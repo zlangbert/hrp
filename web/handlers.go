@@ -41,7 +41,15 @@ func putChart(ec echo.Context) error {
 
 	c.Logger().Infof("putting charts %s", file.Filename)
 
-	err = c.backend.PutChart(file)
+	src, err := file.Open()
+	if err != nil {
+		return echo.NewHTTPError(
+			http.StatusInternalServerError,
+			"failed opening file when uploading chart")
+	}
+	defer src.Close()
+
+	err = c.backend.PutChart(file.Filename, src)
 	if err != nil {
 		return echo.NewHTTPError(
 			http.StatusInternalServerError,

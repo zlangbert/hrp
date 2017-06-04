@@ -1,14 +1,14 @@
 package util
 
 import (
-	"os/exec"
-	"os"
-	log "github.com/sirupsen/logrus"
-	"fmt"
-	"path/filepath"
-	"io/ioutil"
-	"io"
 	"bytes"
+	"fmt"
+	log "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 var (
@@ -20,7 +20,7 @@ type HelmUtil interface {
 	ReadIndex(path string) (io.ReadSeeker, error)
 }
 
-type helmUtilImpl struct{
+type helmUtilImpl struct {
 	Debug bool
 }
 
@@ -50,7 +50,7 @@ func (u *helmUtilImpl) GenerateIndex(baseUrl string, path string) error {
 	return nil
 }
 
-func (u *helmUtilImpl) ReadIndex(path string) (io.ReadSeeker, error)  {
+func (u *helmUtilImpl) ReadIndex(path string) (io.ReadSeeker, error) {
 
 	file, err := os.Open(filepath.Join(path, HelmIndexFilename))
 	if err != nil {

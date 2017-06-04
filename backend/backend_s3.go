@@ -3,7 +3,6 @@ package backend
 import (
 	"io/ioutil"
 	"mime/multipart"
-	"net/http"
 	"path/filepath"
 
 	"errors"
@@ -12,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 	"github.com/zlangbert/hrp/config"
 	"github.com/zlangbert/hrp/util"
@@ -117,21 +115,14 @@ func (b *s3Backend) getFile(key string) ([]byte, error) {
  * 1. upload chart to s3
  * 2. reindex
  */
-func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
-	src, err := header.Open()
-	if err != nil {
-		return echo.NewHTTPError(
-			http.StatusInternalServerError,
-			"failed opening file when uploading chart")
-	}
-	defer src.Close()
+func (b *s3Backend) PutChart(filename string, file multipart.File) error {
 
-	key := filepath.Join(b.config.S3.Prefix, header.Filename)
+	key := filepath.Join(b.config.S3.Prefix, filename)
 
-	_, err = b.svc.PutObject(&s3.PutObjectInput{
+	_, err := b.svc.PutObject(&s3.PutObjectInput{
 		Bucket: &b.config.S3.Bucket,
 		Key:    &key,
-		Body:   src,
+		Body:   file,
 	})
 	if err != nil {
 		return handleAwsError(err)
