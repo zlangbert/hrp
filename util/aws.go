@@ -6,6 +6,7 @@ import (
 	"os/exec"
 )
 
+// AwsUtil wraps the cli for functionality not in the sdk
 type AwsUtil interface {
 	Sync(source string, target string) error
 }
@@ -14,6 +15,7 @@ type awsUtilImpl struct {
 	Debug bool
 }
 
+// NewAwsUtil creates a new AwsUtil
 func NewAwsUtil(debug bool) AwsUtil {
 	return &awsUtilImpl{
 		Debug: debug,

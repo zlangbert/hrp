@@ -314,8 +314,8 @@ type helmUtilMock struct {
 	util.HelmUtil
 }
 
-func (m *helmUtilMock) GenerateIndex(baseUrl string, path string) error {
-	args := m.Called(baseUrl, path)
+func (m *helmUtilMock) GenerateIndex(baseURL string, path string) error {
+	args := m.Called(baseURL, path)
 	return args.Error(0)
 }
 

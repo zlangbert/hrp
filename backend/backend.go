@@ -28,7 +28,7 @@ func NewBackend(cfg *config.AppConfig) (Backend, error) {
 		}
 		backend = b
 	default:
-		return nil, errors.New(fmt.Sprintf("unrecognized storage backend: %s", cfg.BackendName))
+		return nil, fmt.Errorf(fmt.Sprintf("unrecognized storage backend: %s", cfg.BackendName))
 	}
 
 	// initialize
