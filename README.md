@@ -39,7 +39,7 @@ A complete example running with the S3 backend:
 docker run -p '1323:1323' -e 'AWS_ACCESS_KEY_ID=xxxxx' -e 'AWS_SECRET_ACCESS_KEY=xxxxx' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
 ```
 
-Once you have hrp running locally, you can register the repository:
+Once you have hrp running locally, you can register the repository with helm:
 ```
 helm repo add my-hrp http://localhost:1323
 ```
