@@ -30,27 +30,34 @@ When running, you must pass a `--base-url` (repository root, `https://charts.exa
 web server runs on port 1323 inside the container.
   
 Run with `--help` to get the full list of options:
-```
+```sh
 docker run quay.io/zlangbert/hrp:master --help
 ```
   
 A complete example running with the S3 backend:
-```
-docker run -p '1323:1323' -e 'AWS_ACCESS_KEY_ID=xxxxx' -e 'AWS_SECRET_ACCESS_KEY=xxxxx' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
+```sh
+docker run \
+  -p '1323:1323' \
+  -e 'AWS_ACCESS_KEY_ID=xxxxx' \
+  -e 'AWS_SECRET_ACCESS_KEY=xxxxx' \
+  quay.io/zlangbert/hrp:master \
+  --base-url='localhost:1323' \
+  --backend='s3' \
+  --s3-bucket='my-bucket'
 ```
 
 Once you have hrp running locally, you can register the repository with helm:
-```
+```sh
 helm repo add my-hrp http://localhost:1323
 ```
 
 Push a chart:
-```
+```sh
 curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
 ```
 
 Install a chart:
-```
+```sh
 helm install my-hrp/my-chart
 ```
 
@@ -61,7 +68,7 @@ API
 
 Returns the repository's index. This is normally used by helm itself.
 
-```
+```sh
 curl http://localhost:1323/index.yaml
 ```
 
@@ -69,7 +76,7 @@ curl http://localhost:1323/index.yaml
 
 Download a chart, where `:chart` is of the form `my-chart-1.2.3.tgz`. This is normally used by helm itself.
  
-```
+```sh
 curl http://localhost:1323/my-chart-1.2.3.tgz > my-chart.tgz
 ```
 
@@ -78,7 +85,7 @@ curl http://localhost:1323/my-chart-1.2.3.tgz > my-chart.tgz
 Upload a new chart, adding it to the repository. This will replace an existing chart if that version
 already exists.
  
-```
+```sh
 curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
 ```
 
@@ -88,7 +95,7 @@ curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
 Forces a full reindex of the repository. If your `index.yaml` is somehow out of sync, this will regenerate it.
 A reindex is automatically done on startup and when a new chart is pushed.
 
-```
+```sh
 curl -XPOST http://localhost:1323/reindex
 ```
 
@@ -111,7 +118,7 @@ The S3 backend stores the chart repository in an AWS S3 bucket.
 The only required parameter for S3 is `--s3-bucket`. If your bucket is not in `us-east-1`, set `--s3-region` as well.
 
 Parameters:
-```
+```sh
 --s3-bucket=my-bucket (required)
 --s3-region=us-east-1 (optional)
 --s3-prefix=/charts (optional)
@@ -119,8 +126,16 @@ Parameters:
 ```
 
 A full example running the image using S3 and credentials from the local aws configuration:
-```
-docker run -p '1323:1323' -v $HOME/.aws:/root/.aws -e 'AWS_PROFILE=default' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-region=us-west-2 --s3-bucket=my-bucket
+```sh
+docker run \
+  -p '1323:1323' \
+  -v "$HOME/.aws:/root/.aws" \
+  -e 'AWS_PROFILE=default' \
+  quay.io/zlangbert/hrp:master \
+  --base-url='localhost:1323' \
+  --backend='s3' \
+  --s3-region='us-west-2' \
+  --s3-bucket='my-bucket'
 ```
 
 #### Credentials
