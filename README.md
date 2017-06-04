@@ -28,14 +28,29 @@ hrp is distributed as a [docker image](https://quay.io/zlangbert/hrp), making it
 When running, you must pass a `--base-url` (repository root, `https://charts.example.com` for example) and whatever parameters are required for the chosen backend. The
 web server runs on port 1323 inside the container.
   
+Run with `--help` to get the full list of options:
+```
+docker run quay.io/zlangbert/hrp:master --help
+```
+  
 A complete example running with the S3 backend:
 ```
 docker run -p '1323:1323' -e 'AWS_ACCESS_KEY_ID=xxxxx' -e 'AWS_SECRET_ACCESS_KEY=xxxxx' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
 ```
 
-Run with `--help` to get the full list of options:
+Once you have hrp running locally, you can register the repository:
 ```
-docker run quay.io/zlangbert/hrp:master --help
+helm repo add my-hrp http://localhost:1323
+```
+
+Push a chart:
+```
+curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
+```
+
+Install a chart:
+```
+helm install my-hrp/my-chart
 ```
 
 API
