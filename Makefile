@@ -10,7 +10,8 @@ lint:
 	for pkg in $$(go list ./... |grep -v /vendor/); do golint $$pkg; done
 
 test:
-	go test -v -race -cover $(shell go list ./... | grep -v /vendor/)
+	overalls -project='github.com/zlangbert/hrp' -ignore='vendor' -covermode=atomic -- -v -race
+	goveralls -coverprofile=overalls.coverprofile
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker
@@ -37,3 +38,4 @@ build.push: build.docker
 
 clean:
 	@rm -rf build
+	@find . -name '*.coverprofile' -delete
