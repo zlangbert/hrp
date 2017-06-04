@@ -108,18 +108,19 @@ The S3 backend stores the chart repository in an AWS S3 bucket.
 
 #### Configuration
 
-The only required parameter for S3 is `--s3-bucket`.
+The only required parameter for S3 is `--s3-bucket`. If your bucket is not in `us-east-1`, set `--s3-region` as well.
 
 Parameters:
 ```
 --s3-bucket=my-bucket (required)
+--s3-region=us-east-1 (optional)
 --s3-prefix=/charts (optional)
 --s3-local-sync-path=/tmp/hrp (optional)
 ```
 
 A full example running the image using S3 and credentials from the local aws configuration:
 ```
-docker run -p '1323:1323' -v $HOME/.aws:/root/.aws -e 'AWS_PROFILE=default' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
+docker run -p '1323:1323' -v $HOME/.aws:/root/.aws -e 'AWS_PROFILE=default' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-region=us-west-2 --s3-bucket=my-bucket
 ```
 
 #### Credentials

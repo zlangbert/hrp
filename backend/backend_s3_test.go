@@ -21,6 +21,7 @@ import (
 func TestS3_New(t *testing.T) {
 
 	cfg := config.New()
+	cfg.S3.Region = "us-east-1"
 	cfg.S3.Bucket = "test"
 	cfg.S3.LocalSyncPath = "/tmp/hrp"
 
@@ -30,9 +31,23 @@ func TestS3_New(t *testing.T) {
 	assert.Nil(t, err, "err nil")
 }
 
+func TestS3_New_ConfigVerify_MissingRegion(t *testing.T) {
+
+	cfg := config.New()
+
+	_, err := newS3(cfg)
+
+	assert.Error(t, err, "missing config returns error")
+	assert.Contains(t,
+		err.Error(),
+		"region missing",
+		"expected region missing error")
+}
+
 func TestS3_New_ConfigVerify_MissingBucket(t *testing.T) {
 
 	cfg := config.New()
+	cfg.S3.Region = "us-east-1"
 
 	_, err := newS3(cfg)
 
@@ -46,6 +61,7 @@ func TestS3_New_ConfigVerify_MissingBucket(t *testing.T) {
 func TestS3_New_ConfigVerify_MissingLocalSyncPath(t *testing.T) {
 
 	cfg := config.New()
+	cfg.S3.Region = "us-east-1"
 	cfg.S3.Bucket = "test"
 
 	_, err := newS3(cfg)
@@ -273,6 +289,7 @@ func TestS3Backend_PutChart(t *testing.T) {
 
 func testConfig() *config.AppConfig {
 	cfg := config.New()
+	cfg.S3.Region = "us-east-1"
 	cfg.S3.Bucket = "bucket-test"
 	cfg.S3.Prefix = "prefix"
 	cfg.S3.LocalSyncPath = "/tmp/hrp"

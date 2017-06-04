@@ -36,6 +36,7 @@ func TestNewBackend_S3(t *testing.T) {
 
 	cfg := config.New()
 	cfg.BackendName = "s3"
+	cfg.S3.Region = "us-east-1"
 	cfg.S3.Bucket = "test"
 	cfg.S3.LocalSyncPath = "/tmp"
 
@@ -49,6 +50,7 @@ func TestNewBackend_InitFail(t *testing.T) {
 
 	cfg := config.New()
 	cfg.BackendName = "s3"
+	cfg.S3.Region = "us-east-1"
 	cfg.S3.Bucket = "test"
 	cfg.S3.LocalSyncPath = "/tmp"
 

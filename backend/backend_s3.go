@@ -29,6 +29,9 @@ type s3Backend struct {
 func newS3(config *config.AppConfig) (*s3Backend, error) {
 
 	// validate config
+	if config.S3.Region == "" {
+		return nil, errors.New("s3 config - region missing")
+	}
 	if config.S3.Bucket == "" {
 		return nil, errors.New("s3 config - bucket missing")
 	}
@@ -37,7 +40,7 @@ func newS3(config *config.AppConfig) (*s3Backend, error) {
 	}
 
 	// create aws session
-	awsConfig := &aws.Config{Region: aws.String("us-west-2")}
+	awsConfig := &aws.Config{Region: aws.String(config.S3.Region)}
 	awsSession, err := session.NewSession(awsConfig)
 	if err != nil {
 		handleAwsError(err)

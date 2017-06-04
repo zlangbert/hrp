@@ -19,6 +19,7 @@ type AppConfig struct {
 
 // S3Config contains s3 specific config
 type S3Config struct {
+	Region        string
 	Bucket        string
 	Prefix        string
 	LocalSyncPath string
@@ -52,6 +53,10 @@ func (cfg *AppConfig) Parse(args []string) error {
 		BoolVar(&cfg.Debug)
 
 	// build s3 backend config
+	app.Flag("s3-region", "The AWS region the bucket is in").
+		PlaceHolder("us-east-1").
+		StringVar(&cfg.S3.Bucket)
+
 	app.Flag("s3-bucket", "The AWS S3 bucket to use for storage").
 		PlaceHolder("my-bucket").
 		StringVar(&cfg.S3.Bucket)
