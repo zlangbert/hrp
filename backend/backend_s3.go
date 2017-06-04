@@ -4,53 +4,56 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"os/exec"
 	"path/filepath"
 
-	"fmt"
+	"errors"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 	"github.com/zlangbert/hrp/config"
+	"github.com/zlangbert/hrp/util"
 	"sync"
 )
 
-var (
-	indexFilename = "index.yaml"
-)
-
 type s3Backend struct {
-	config *config.AppConfig
-	svc    *s3.S3
-	lock   *sync.Mutex
+	config   *config.AppConfig
+	svc      s3iface.S3API
+	awsUtil  util.AwsUtil
+	helmUtil util.HelmUtil
+
+	reindexLock *sync.Mutex
 }
 
-func newS3(config *config.AppConfig) *s3Backend {
+func newS3(config *config.AppConfig) (*s3Backend, error) {
 
 	// validate config
 	if config.S3.Bucket == "" {
-		log.Fatal("s3 config - bucket missing")
+		return nil, errors.New("s3 config - bucket missing")
 	}
 	if config.S3.LocalSyncPath == "" {
-		log.Fatal("s3 config - local sync path missing")
+		return nil, errors.New("s3 config - local sync path missing")
 	}
 
 	// create aws session
 	awsConfig := &aws.Config{Region: aws.String("us-west-2")}
 	awsSession, err := session.NewSession(awsConfig)
 	if err != nil {
-		log.Fatal("failed to create aws session", err)
+		handleAwsError(err)
+		return nil, errors.New("failed to create aws session")
 	}
 
 	return &s3Backend{
-		svc:    s3.New(awsSession),
-		config: config,
-		lock:   &sync.Mutex{},
-	}
+		svc:      s3.New(awsSession),
+		config:   config,
+		awsUtil:  util.NewAwsUtil(config.Debug),
+		helmUtil: util.NewHelmUtil(config.Debug),
+
+		reindexLock: &sync.Mutex{},
+	}, nil
 }
 
 /*
@@ -62,7 +65,7 @@ func (b *s3Backend) Initialize() error {
 
 	err := b.Reindex()
 	if err != nil {
-		return b.handleAwsError(err)
+		return handleAwsError(err)
 	}
 
 	return nil
@@ -75,7 +78,7 @@ func (b *s3Backend) Initialize() error {
  */
 func (b *s3Backend) GetIndex() ([]byte, error) {
 
-	key := filepath.Join(b.config.S3.Prefix, indexFilename)
+	key := filepath.Join(b.config.S3.Prefix, util.HelmIndexFilename)
 	return b.getFile(key)
 }
 
@@ -96,13 +99,13 @@ func (b *s3Backend) getFile(key string) ([]byte, error) {
 		Key:    &key,
 	})
 	if err != nil {
-		return nil, b.handleAwsError(err)
+		return nil, handleAwsError(err)
 	}
 
 	bytes, err := ioutil.ReadAll(result.Body)
 	if err != nil {
 		log.Errorf("failed reading file from s3: %s", key)
-		return nil, b.handleAwsError(err)
+		return nil, handleAwsError(err)
 	}
 
 	return bytes, nil
@@ -131,12 +134,12 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
 		Body:   src,
 	})
 	if err != nil {
-		return b.handleAwsError(err)
+		return handleAwsError(err)
 	}
 
 	err = b.Reindex()
 	if err != nil {
-		return b.handleAwsError(err)
+		return handleAwsError(err)
 	}
 
 	return nil
@@ -151,48 +154,42 @@ func (b *s3Backend) PutChart(header *multipart.FileHeader) error {
  */
 func (b *s3Backend) Reindex() error {
 
-	b.lock.Lock()
-	defer b.lock.Unlock()
+	b.reindexLock.Lock()
+	defer b.reindexLock.Unlock()
 
 	log.Info("reindexing...")
 
-	err := b.localSync()
+	source := "s3://" + filepath.Join(b.config.S3.Bucket, b.config.S3.Prefix)
+	target := b.config.S3.LocalSyncPath
+
+	// local bucket sync
+	err := b.awsUtil.Sync(source, target)
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command(
-		"helm",
-		"repo",
-		"index",
-		fmt.Sprintf("--url=%s", b.config.BaseURL),
-		b.config.S3.LocalSyncPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	// helm reindex
+	err = b.helmUtil.GenerateIndex(b.config.BaseURL, b.config.S3.LocalSyncPath)
 	if err != nil {
-		log.Errorf("helm repo index failed: %s", err.Error())
 		return err
 	}
 
 	// read index file
-	file, err := os.Open(filepath.Join(b.config.S3.LocalSyncPath, indexFilename))
+	indexData, err := b.helmUtil.ReadIndex(b.config.S3.LocalSyncPath)
 	if err != nil {
-		log.Errorf("failed to open index file: %s", err.Error())
 		return err
 	}
-	defer file.Close()
 
 	// upload new index
-	key := filepath.Join(b.config.S3.Prefix, indexFilename)
+	key := filepath.Join(b.config.S3.Prefix, util.HelmIndexFilename)
 	_, err = b.svc.PutObject(&s3.PutObjectInput{
 		Bucket: &b.config.S3.Bucket,
 		Key:    &key,
-		Body:   file,
+		Body:   indexData,
 	})
 
 	if err != nil {
-		return b.handleAwsError(err)
+		return handleAwsError(err)
 	}
 
 	log.Info("done reindexing")
@@ -201,32 +198,9 @@ func (b *s3Backend) Reindex() error {
 }
 
 /*
- * pull bucket contents to local filesystem to reindex
- */
-func (b *s3Backend) localSync() error {
-
-	source := "s3://" + filepath.Join(b.config.S3.Bucket, b.config.S3.Prefix)
-	target := b.config.S3.LocalSyncPath
-
-	cmd := exec.Command("aws", "s3", "sync", "--delete", source, target)
-	if b.config.Debug {
-		cmd.Stdout = os.Stdout
-	}
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-
-	if err != nil {
-		log.Error("failed s3 sync")
-		return err
-	}
-
-	return nil
-}
-
-/*
  * log details if the error is an aws error
  */
-func (b *s3Backend) handleAwsError(err error) error {
+func handleAwsError(err error) error {
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			// Prints out full error message, including original error if there was one.

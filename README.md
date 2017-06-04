@@ -18,9 +18,14 @@ Table of contents
   * [Table of contents](#table-of-contents)
   * [API](#api)
   * [Backends](#backends)
+    * [S3](#s3)
 
 Getting Started
 =====
+
+```
+docker run quay.io/zlangbert/hrp:master --help
+```
 
 API
 =====
@@ -79,3 +84,5 @@ Returns a 200 and no content if the web server is alive.
 
 Backends
 =====
+
+## S3

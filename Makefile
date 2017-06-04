@@ -10,7 +10,7 @@ lint:
 	for pkg in $$(go list ./... |grep -v /vendor/); do golint $$pkg; done
 
 test:
-	go test -v -race $(shell go list ./... | grep -v /vendor/)
+	go test -v -race -cover $(shell go list ./... | grep -v /vendor/)
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker

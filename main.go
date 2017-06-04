@@ -18,7 +18,10 @@ func main() {
 	}
 
 	// build backend
-	b := backend.NewBackend(cfg)
+	b, err := backend.NewBackend(cfg)
+	if err != nil {
+		log.Fatal("failed to build backend")
+	}
 
 	// start web server
 	web.Start(cfg, b)
