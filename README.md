@@ -23,6 +23,17 @@ Table of contents
 Getting Started
 =====
 
+hrp is distributed as a [docker image](https://quay.io/zlangbert/hrp), making it easy to run locally, on Kubernetes, etc.
+
+When running, you must pass a `--base-url` (repository root, `https://charts.example.com` for example) and whatever parameters are required for the chosen backend. The
+web server runs on port 1323 inside the container.
+  
+A complete example running with the S3 backend:
+```
+docker run -p '1323:1323' -e 'AWS_ACCESS_KEY_ID=xxxxx' -e 'AWS_SECRET_ACCESS_KEY=xxxxx' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
+```
+
+Run with `--help` to get the full list of options:
 ```
 docker run quay.io/zlangbert/hrp:master --help
 ```
@@ -36,19 +47,6 @@ Returns the repository's index. This is normally used by helm itself.
 
 ```
 curl http://localhost:1323/index.yaml
-
-apiVersion: v1
-entries:
-  my-chart:
-  - apiVersion: v1
-    created: 2017-05-29T15:01:34.229784367-07:00
-    description: My awesome chart in my awesome repository
-    digest: e04b93e72eba81f4a2459b0d1922e5dd307e2ec7ef9a10fe9d0ecb3f675ffa96
-    name: my-chart
-    urls:
-    - my-chart-0.1.0.tgz
-    version: 0.1.0
-generated: 2017-05-29T15:01:34.22940587-07:00
 ```
 
 ### `GET /:chart`
@@ -85,4 +83,32 @@ Returns a 200 and no content if the web server is alive.
 Backends
 =====
 
+The storage backend is where the packaged charts are stored. The following is a list of the supported backends
+and their configuration options.
+
 ## S3
+
+The S3 backend stores the chart repository in an AWS S3 bucket.
+
+#### Configuration
+
+The only required parameter for S3 is `--s3-bucket`.
+
+Parameters:
+```
+--s3-bucket=my-bucket (required)
+--s3-prefix=/charts (optional)
+--s3-local-sync-path=/tmp/hrp (optional)
+```
+
+A full example running the image using S3 and credentials from the local aws configuration:
+```
+docker run -p '1323:1323' -v $HOME/.aws:/root/.aws -e 'AWS_PROFILE=default' quay.io/zlangbert/hrp:master --base-url='localhost:1323' --backend=s3 --s3-bucket=my-bucket
+```
+
+#### Credentials
+
+The AWS SDK is configured to use the default credentials chain. This means any standard way of consuming 
+credentials will work. For example, you could mount your `.aws` folder in the container, and set `AWS_PROFILE=my-profile`,
+or you could set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` directly. If you are running on EC2 the instance profile
+can also be used.
