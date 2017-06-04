@@ -1,10 +1,10 @@
 package backend
 
 import (
-	"testing"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/zlangbert/hrp/config"
-	"errors"
+	"testing"
 )
 
 func TestNewBackend_InvalidBackendName(t *testing.T) {

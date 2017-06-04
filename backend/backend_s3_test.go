@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,6 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"testing"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 func TestS3_New(t *testing.T) {
@@ -365,6 +365,6 @@ type readerError struct {
 	io.Reader
 }
 
-func (r *readerError) Read(p []byte) (n int, err error)  {
+func (r *readerError) Read(p []byte) (n int, err error) {
 	return 0, errors.New("read error")
 }
