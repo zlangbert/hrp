@@ -55,7 +55,7 @@ func (cfg *AppConfig) Parse(args []string) error {
 	// build s3 backend config
 	app.Flag("s3-region", "The AWS region the bucket is in").
 		PlaceHolder("us-east-1").
-		StringVar(&cfg.S3.Bucket)
+		StringVar(&cfg.S3.Region)
 
 	app.Flag("s3-bucket", "The AWS S3 bucket to use for storage").
 		PlaceHolder("my-bucket").
