@@ -90,7 +90,7 @@ curl -XPOST -F chart=@my-chart-1.2.3.tgz http://localhost:1323/chart
 ```
 
 
-### `POST /reindex.yaml`
+### `POST /reindex`
 
 Forces a full reindex of the repository. If your `index.yaml` is somehow out of sync, this will regenerate it.
 A reindex is automatically done on startup and when a new chart is pushed.
