@@ -14,7 +14,8 @@ type AppConfig struct {
 	BackendName string
 	Debug       bool
 
-	S3 S3Config
+	S3         S3Config
+	Filesystem FilesystemConfig
 }
 
 // S3Config contains s3 specific config
@@ -23,13 +24,18 @@ type S3Config struct {
 	Bucket        string
 	Prefix        string
 	LocalSyncPath string
-	Debug         bool
+}
+
+// FilesystemConfig contains s3 specific config
+type FilesystemConfig struct {
+	Path string
 }
 
 // New returns a new, empty AppConfig
 func New() *AppConfig {
 	return &AppConfig{
 		S3: S3Config{},
+		Filesystem: FilesystemConfig{},
 	}
 }
 
@@ -68,6 +74,11 @@ func (cfg *AppConfig) Parse(args []string) error {
 	app.Flag("s3-local-sync-path", "The local path to sync to when reindexing").
 		Default("/tmp/hrp").
 		StringVar(&cfg.S3.LocalSyncPath)
+
+	// build filesystem backend config
+	app.Flag("filesystem-path", "The local path to store repository").
+		Default("/var/lib/hrp").
+		StringVar(&cfg.Filesystem.Path)
 
 	_, err := app.Parse(args)
 	if err != nil {

@@ -27,6 +27,12 @@ func NewBackend(cfg *config.AppConfig, init bool) (Backend, error) {
 			return nil, err
 		}
 		backend = b
+	case "filesystem":
+		b, err := newFilesystem(cfg)
+		if err != nil {
+			return nil, err
+		}
+		backend = b
 	default:
 		return nil, fmt.Errorf(fmt.Sprintf("unrecognized storage backend: %s", cfg.BackendName))
 	}
